@@ -18,9 +18,9 @@
     
     function HabitTracker() {
       const [habits, setHabits] = useState([
-        { id: 1, name: 'Check Email', emoji: '📧', goal: 7 },
-        { id: 2, name: 'Stats prep', emoji: '📊', goal: 5 },
-        { id: 3, name: 'BA Udemy', emoji: '💼', goal: 5 },
+        { id: 1, name: 'Email', emoji: '📧', goal: 7 },
+        { id: 2, name: 'Stats', emoji: '📊', goal: 5 },
+        { id: 3, name: 'Udemy', emoji: '💼', goal: 5 },
         { id: 4, name: 'R Swirl', emoji: '📈', goal: 3 }
       ]);
       
@@ -46,7 +46,7 @@
 
       const weekDates = getWeekDates();
       const formatDate = (date) => date.toISOString().split('T')[0];
-      const getCurrentMonth = () => new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+      const getCurrentMonth = () => new Date().toLocaleString('default', { month: 'short', year: 'numeric' });
 
       useEffect(() => {
         const stored = localStorage.getItem('habitData');
@@ -62,158 +62,103 @@
         localStorage.setItem('habitData', JSON.stringify({ completions, monthlyStats, habits }));
       }, [completions, monthlyStats, habits]);
 
-      // Logic to trigger confetti
       const triggerConfetti = () => {
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#5e7ce2', '#7d8ba8', '#e8e2dd', '#50C878']
-        });
+        confetti({ particleCount: 100, spread: 50, origin: { y: 0.8 }, colors: ['#5e7ce2', '#7d8ba8', '#50C878'] });
       };
 
       const toggleHabit = (habitId, date) => {
         const key = `${habitId}-${date}`;
         const newCompletions = { ...completions };
-        
         const isTurningOn = !newCompletions[key];
-
-        if (newCompletions[key]) {
-          delete newCompletions[key];
-        } else {
-          newCompletions[key] = true;
-        }
-        
+        isTurningOn ? newCompletions[key] = true : delete newCompletions[key];
         setCompletions(newCompletions);
         updateMonthlyStats(habitId, newCompletions);
-
-        // Check if all habits for THIS date are now complete
         if (isTurningOn) {
-          const allDone = habits.every(h => 
-            h.id === habitId ? true : newCompletions[`${h.id}-${date}`]
-          );
+          const allDone = habits.every(h => h.id === habitId ? true : newCompletions[`${h.id}-${date}`]);
           if (allDone) triggerConfetti();
         }
       };
 
       const updateMonthlyStats = (habitId, newCompletions) => {
         const currentMonth = getCurrentMonth();
-        const monthKey = `${habitId}-${currentMonth}`;
         const monthCompletions = Object.keys(newCompletions).filter(key => {
           if (!key.startsWith(`${habitId}-`)) return false;
           const date = key.split('-').slice(1).join('-');
           const checkDate = new Date(date);
-          return checkDate.getMonth() === new Date().getMonth() && 
-                 checkDate.getFullYear() === new Date().getFullYear();
+          return checkDate.getMonth() === new Date().getMonth();
         }).length;
-        setMonthlyStats(prev => ({ ...prev, [monthKey]: monthCompletions }));
+        setMonthlyStats(prev => ({ ...prev, [`${habitId}-${currentMonth}`]: monthCompletions }));
       };
 
       const isChecked = (habitId, date) => completions[`${habitId}-${date}`] || false;
-
       const getStreak = (habitId) => {
         let streak = 0;
         const today = new Date();
         for (let i = 0; i < 365; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() - i);
-          if (isChecked(habitId, formatDate(date))) {
-            streak++;
-          } else {
-            break; 
-          }
+          if (isChecked(habitId, formatDate(date))) streak++;
+          else break;
         }
         return streak;
       };
 
-      const getWeeklyCount = (habitId) => {
-        return weekDates.filter(date => isChecked(habitId, formatDate(date))).length;
-      };
-
-      const addHabit = () => {
-        if (newHabit.trim()) {
-          setHabits([...habits, {
-            id: Date.now(),
-            name: newHabit.trim(),
-            emoji: newEmoji,
-            goal: parseInt(newGoal) || 7
-          }]);
-          setNewHabit('');
-          setNewEmoji('✨');
-          setNewGoal(7);
-        }
-      };
-
-      const deleteHabit = (habitId) => {
-        if(confirm("Delete this habit?")) setHabits(habits.filter(h => h.id !== habitId));
-      };
-
       return (
-        <div className="min-h-screen p-4" style={{background: '#c9bdb4'}}>
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-6 p-4 rounded-2xl" style={{background: '#c9bdb4'}}>
-              <h1 className="text-4xl font-bold mb-2" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>
-                Habit Tracker ★⁺˚
-              </h1>
-              <p className="text-sm" style={{color: '#8b7d73'}}>Week of {weekDates[0].toLocaleDateString()}</p>
+        <div className="min-h-screen p-2" style={{background: '#c9bdb4'}}>
+          <div className="max-w-full mx-auto">
+            {/* Shrunken Header */}
+            <div className="mb-2 flex justify-between items-end px-1">
+              <h1 className="text-xl font-bold" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>Habits ★</h1>
+              <p className="text-[10px]" style={{color: '#8b7d73'}}>{weekDates[0].toLocaleDateString()}</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-4 overflow-x-auto" style={{background: '#e8e2dd'}}>
-              <table className="w-full">
+            <div className="bg-white rounded-lg shadow p-2 mb-2 overflow-x-auto" style={{background: '#e8e2dd'}}>
+              <table className="w-full text-xs">
                 <thead>
-                  <tr style={{borderBottom: '2px solid #d0c4bd'}}>
-                    <th className="text-left p-3 font-bold text-sm" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>Habit</th>
-                    <th className="text-center p-3 font-bold text-sm" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>Goal</th>
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
-                      <th key={day} className="p-3 text-center">
-                        <div className="font-semibold text-sm" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>{day}</div>
-                        <div className="text-xs" style={{color: '#8b7d73'}}>{weekDates[idx].getDate()}</div>
+                  <tr className="border-b border-[#d0c4bd]">
+                    <th className="text-left py-1 px-1 font-bold text-[#7d8ba8]">Habit</th>
+                    <th className="text-center py-1 px-1 text-[#7d8ba8]">Goal</th>
+                    {['M','T','W','T','F','S','S'].map((day, idx) => (
+                      <th key={idx} className="py-1 px-0.5 text-center text-[#7d8ba8]">
+                        <div>{day}</div>
+                        <div className="text-[9px] opacity-70">{weekDates[idx].getDate()}</div>
                       </th>
                     ))}
-                    <th className="p-3"></th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {habits.map(habit => {
-                    const weeklyCount = getWeeklyCount(habit.id);
-                    const progressWidth = Math.min((weeklyCount / habit.goal) * 100, 100);
+                    const weeklyCount = weekDates.filter(d => isChecked(habit.id, formatDate(d))).length;
                     return (
-                      <tr key={habit.id} style={{borderBottom: '1px solid #d9cfc7'}}>
-                        <td className="p-3">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xl">{habit.emoji}</span>
-                              <span className="font-medium text-sm" style={{color: '#4a4a4a'}}>{habit.name}</span>
-                            </div>
-                            <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full transition-all duration-500" 
-                                style={{ width: `${progressWidth}%`, background: weeklyCount >= habit.goal ? '#50C878' : '#7d8ba8' }}
-                              ></div>
-                            </div>
+                      <tr key={habit.id} className="border-b border-[#d9cfc7]">
+                        <td className="py-1.5 px-1 max-w-[80px]">
+                          <div className="flex items-center gap-1 truncate">
+                            <span>{habit.emoji}</span>
+                            <span className="font-medium text-[#4a4a4a] truncate">{habit.name}</span>
                           </div>
                         </td>
-                        <td className="p-3 text-center text-xs font-bold" style={{color: '#8b7d73'}}>{weeklyCount}/{habit.goal}</td>
+                        <td className="text-center text-[10px] text-[#8b7d73]">{weeklyCount}/{habit.goal}</td>
                         {weekDates.map(date => {
                           const dateStr = formatDate(date);
                           const checked = isChecked(habit.id, dateStr);
                           return (
-                            <td key={dateStr} className="p-3 text-center">
+                            <td key={dateStr} className="p-0.5 text-center">
                               <button
                                 onClick={() => toggleHabit(habit.id, dateStr)}
-                                className="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center"
+                                className="w-5 h-5 rounded border transition-all flex items-center justify-center mx-auto"
                                 style={{
                                   background: checked ? '#5e7ce2' : 'white',
                                   borderColor: checked ? '#5e7ce2' : '#b8ada3',
                                 }}
                               >
-                                {checked && <span className="text-white text-lg">✓</span>}
+                                {checked && <span className="text-white text-[10px]">✓</span>}
                               </button>
                             </td>
                           );
                         })}
-                        <td className="p-3 text-center">
-                          <button onClick={() => deleteHabit(habit.id)} className="text-xs" style={{color: '#b8ada3'}}>✕</button>
+                        <td className="text-right">
+                          <button onClick={() => setHabits(habits.filter(h => h.id !== habit.id))} className="text-[10px] text-[#b8ada3] px-1">✕</button>
                         </td>
                       </tr>
                     );
@@ -221,62 +166,44 @@
                 </tbody>
               </table>
 
-              <div className="mt-4 pt-4" style={{borderTop: '2px solid #d0c4bd'}}>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <input
-                    type="text" value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)}
-                    className="w-12 p-2 text-center text-xl border-2 rounded-lg" style={{borderColor: '#b8ada3'}}
-                    maxLength="2"
-                  />
-                  <input
-                    type="text" value={newHabit} onChange={(e) => setNewHabit(e.target.value)}
-                    placeholder="Habit name..." className="flex-1 min-w-[150px] p-2 text-sm border-2 rounded-lg"
-                    style={{borderColor: '#b8ada3'}}
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold" style={{color: '#7d8ba8'}}>Goal:</span>
-                    <input
-                      type="number" value={newGoal} onChange={(e) => setNewGoal(e.target.value)}
-                      min="1" max="7" className="w-14 p-2 text-sm border-2 rounded-lg"
-                      style={{borderColor: '#b8ada3'}}
-                    />
-                  </div>
-                  <button onClick={addHabit} className="px-4 py-2 text-white text-sm rounded-lg font-semibold whitespace-nowrap" style={{background: '#7d8ba8'}}>
-                    + Add Habit
-                  </button>
-                </div>
+              {/* Shrunken Add Form */}
+              <div className="mt-2 flex gap-1">
+                <input type="text" value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} className="w-7 p-1 text-center border rounded bg-transparent text-xs" />
+                <input type="text" value={newHabit} onChange={(e) => setNewHabit(e.target.value)} placeholder="New..." className="flex-1 p-1 text-xs border rounded bg-transparent" />
+                <button onClick={() => {
+                   if (newHabit.trim()) {
+                    setHabits([...habits, { id: Date.now(), name: newHabit.trim(), emoji: newEmoji, goal: 7 }]);
+                    setNewHabit('');
+                  }
+                }} className="px-2 py-1 text-white text-[10px] rounded bg-[#7d8ba8]">+ Add</button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-lg shadow-lg p-4" style={{background: '#e8e2dd'}}>
-                <h2 className="text-xl font-bold mb-3" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>⭐ {getCurrentMonth()}</h2>
-                <div className="space-y-2">
-                  {habits.map(habit => (
-                    <div key={habit.id} className="flex items-center justify-between p-2 rounded-lg text-sm" style={{background: '#d9cfc7'}}>
-                      <span className="flex items-center gap-2"><span>{habit.emoji}</span><span className="font-medium">{habit.name}</span></span>
-                      <span className="font-bold">{monthlyStats[`${habit.id}-${getCurrentMonth()}`] || 0} days</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Compact Stats Cards */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded p-2" style={{background: '#e8e2dd'}}>
+                <h2 className="text-[11px] font-bold mb-1 text-[#7d8ba8]">⭐ {getCurrentMonth()}</h2>
+                {habits.slice(0, 3).map(h => (
+                  <div key={h.id} className="text-[10px] flex justify-between opacity-80">
+                    <span>{h.emoji} {h.name}</span>
+                    <span>{monthlyStats[`${h.id}-${getCurrentMonth()}`] || 0}d</span>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-lg shadow-lg p-4" style={{background: '#e8e2dd'}}>
-                <h2 className="text-xl font-bold mb-3" style={{fontFamily: 'cursive', color: '#7d8ba8'}}>🔥 Streaks</h2>
-                <div className="space-y-2">
-                  {habits.map(habit => (
-                    <div key={habit.id} className="flex items-center justify-between p-2 rounded-lg text-sm" style={{background: '#d9cfc7'}}>
-                      <span className="flex items-center gap-2"><span>{habit.emoji}</span><span className="font-medium">{habit.name}</span></span>
-                      <span className="font-bold">{getStreak(habit.id)} 🔥</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded p-2" style={{background: '#e8e2dd'}}>
+                <h2 className="text-[11px] font-bold mb-1 text-[#7d8ba8]">🔥 Streaks</h2>
+                {habits.slice(0, 3).map(h => (
+                  <div key={h.id} className="text-[10px] flex justify-between opacity-80">
+                    <span>{h.emoji} {h.name}</span>
+                    <span>{getStreak(h.id)}🔥</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       );
     }
-
     ReactDOM.render(<HabitTracker />, document.getElementById('root'));
   </script>
 </body>
