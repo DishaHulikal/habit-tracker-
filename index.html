@@ -84,14 +84,14 @@
         }
         
         setCompletions(newCompletions);
-        updateMonthlyStats(habitId);
+        updateMonthlyStats(habitId, newCompletions);
       };
 
-      const updateMonthlyStats = (habitId) => {
+      const updateMonthlyStats = (habitId, newCompletions) => {
         const currentMonth = getCurrentMonth();
         const monthKey = `${habitId}-${currentMonth}`;
         
-        const monthCompletions = Object.keys(completions).filter(key => {
+        const monthCompletions = Object.keys(newCompletions).filter(key => {
           if (!key.startsWith(`${habitId}-`)) return false;
           const date = key.split('-').slice(1).join('-');
           const checkDate = new Date(date);
