@@ -62,6 +62,12 @@
         }
       };
 
+      const deleteHabit = (id) => {
+        if (confirm('Delete this habit?')) {
+          setHabits(habits.filter(h => h.id !== id));
+        }
+      };
+
       const getStreak = (id) => {
         let streak = 0;
         const today = new Date();
@@ -76,7 +82,6 @@
       return (
         <div className="w-full p-2 antialiased">
           <div className="flex justify-between items-center mb-1.5 px-1">
-            {/* SMALLER TITLE */}
             <span className="text-base text-[#7d8ba8]">𝓗𝓪𝓫𝓲𝓽 𝓣𝓻𝓪𝓬𝓴𝓮𝓻 ⋆˚࿔</span>
             <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
               <span className="text-sm">{showAdd ? '✕' : '＋'}</span>
@@ -88,9 +93,14 @@
               const weekly = weekDates.filter(d => isChecked(habit.id, d)).length;
               const streak = getStreak(habit.id);
               return (
-                <div key={habit.id} className="group relative bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
+                <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
                   <div className="flex justify-between items-center mb-1 text-[10px]">
                     <div className="flex items-center gap-1 font-bold truncate pr-1">
+                      {/* NEW DELETE BUTTON */}
+                      <button 
+                        onClick={() => deleteHabit(habit.id)}
+                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-1 transition-colors"
+                      >✕</button>
                       <span>{habit.emoji}</span>
                       <span className="truncate text-[#4a4a4a]">{habit.name}</span>
                     </div>
