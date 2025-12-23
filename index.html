@@ -9,23 +9,26 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body style="background: #c9bdb4; margin: 0; padding: 0; overflow: hidden;">
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
+
     function HabitTracker() {
       const [habits, setHabits] = useState([
         { id: 1, name: 'Check Email', emoji: '📧', goal: 7 },
         { id: 2, name: 'Stats prep', emoji: '📊', goal: 5 },
-        { id: 3, name: 'BA Udemy', emoji: '💼', goal: 5 },
+        { id: 3, name: 'BA learning', emoji: '💼', goal: 5 },
         { id: 4, name: 'R Swirl', emoji: '📈', goal: 3 }
       ]);
       const [completions, setCompletions] = useState({});
       const [newHabit, setNewHabit] = useState('');
       const [showAdd, setShowAdd] = useState(false);
+      const [editingId, setEditingId] = useState(null);
+      const listRef = useRef(null);
 
-      // FIXED: Strict Local Date String (YYYY-MM-DD)
       const getLocalDateString = (date) => {
         const offset = date.getTimezoneOffset();
         const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -57,6 +60,25 @@
         localStorage.setItem('habitData', JSON.stringify({ completions, habits }));
       }, [completions, habits]);
 
+      // Drag and Drop Logic
+      useEffect(() => {
+        if (listRef.current) {
+          Sortable.create(listRef.current, {
+            animation: 150,
+            onEnd: (evt) => {
+              const newHabits = [...habits];
+              const [movedItem] = newHabits.splice(evt.oldIndex, 1);
+              newHabits.splice(evt.newIndex, 0, movedItem);
+              setHabits(newHabits);
+            },
+          });
+        }
+      }, [habits]);
+
+      const updateHabit = (id, field, value) => {
+        setHabits(habits.map(h => h.id === id ? { ...h, [field]: value } : h));
+      };
+
       const toggle = (id, d) => {
         const key = `${id}-${getLocalDateString(d)}`;
         const newComps = { ...completions };
@@ -68,12 +90,6 @@
         }
       };
 
-      const deleteHabit = (id) => {
-        if (confirm('Delete this habit?')) {
-          setHabits(habits.filter(h => h.id !== id));
-        }
-      };
-
       const getStreak = (id) => {
         let streak = 0;
         const checkDate = new Date();
@@ -81,15 +97,13 @@
           if (completions[`${id}-${getLocalDateString(checkDate)}`]) {
             streak++;
             checkDate.setDate(checkDate.getDate() - 1);
-          } else {
-            break;
-          }
+          } else { break; }
         }
         return streak;
       };
 
       return (
-        <div className="w-full p-2 antialiased">
+        <div className="w-full p-2 antialiased select-none">
           <div className="flex justify-between items-center mb-1.5 px-1">
             <span className="text-base text-[#7d8ba8]">𝓗𝓪𝓫𝓲𝓽 𝓣𝓻𝓪𝓬𝓴𝓮𝓻 ⋆˚࿔</span>
             <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
@@ -97,35 +111,44 @@
             </button>
           </div>
           
-          <div className="space-y-1">
+          <div ref={listRef} className="space-y-1">
             {habits.map(habit => {
               const weekly = weekDates.filter(d => completions[`${habit.id}-${getLocalDateString(d)}`]).length;
               const streak = getStreak(habit.id);
+              const isEditing = editingId === habit.id;
+
               return (
-                <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
+                <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm cursor-grab active:cursor-grabbing">
                   <div className="flex justify-between items-center mb-1 text-[10px]">
-                    <div className="flex items-center gap-1 font-bold truncate pr-1">
-                      <button onClick={() => deleteHabit(habit.id)} className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5">✕</button>
-                      <span>{habit.emoji}</span>
-                      <span className="truncate text-[#4a4a4a]">{habit.name}</span>
+                    <div className="flex items-center gap-1 font-bold flex-1 min-w-0 pr-2">
+                      <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete?')) setHabits(habits.filter(h => h.id !== habit.id)) }} className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5">✕</button>
+                      
+                      {isEditing ? (
+                        <div className="flex gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+                          <input className="w-6 border-none bg-white rounded px-0.5" value={habit.emoji} onChange={(e) => updateHabit(habit.id, 'emoji', e.target.value)} />
+                          <input className="flex-1 border-none bg-white rounded px-1 outline-none font-bold text-[#4a4a4a]" value={habit.name} onChange={(e) => updateHabit(habit.id, 'name', e.target.value)} onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)} onBlur={() => setEditingId(null)} autoFocus />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 truncate" onClick={(e) => { e.stopPropagation(); setEditingId(habit.id); }}>
+                          <span>{habit.emoji}</span>
+                          <span className="truncate text-[#4a4a4a]">{habit.name}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2 whitespace-nowrap font-bold text-[#7d8ba8]">
-                      <span>{weekly}/{habit.goal || 7}</span>
+                    
+                    <div className="flex gap-2 whitespace-nowrap font-bold text-[#7d8ba8]" onClick={(e) => e.stopPropagation()}>
+                      <span className="cursor-pointer" onClick={() => {
+                        const newGoal = prompt('Weekly goal?', habit.goal);
+                        if (newGoal) updateHabit(habit.id, 'goal', parseInt(newGoal));
+                      }}>{weekly}/{habit.goal || 7}</span>
                       <span className="text-orange-600">{streak}🔥</span>
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-0.5" onClick={(e) => e.stopPropagation()}>
                     {['M','T','W','T','F','S','S'].map((day, i) => {
-                      const dateStr = getLocalDateString(weekDates[i]);
-                      const checked = completions[`${habit.id}-${dateStr}`];
+                      const checked = completions[`${habit.id}-${getLocalDateString(weekDates[i])}`];
                       return (
-                        <button 
-                          key={i}
-                          onClick={() => toggle(habit.id, weekDates[i])}
-                          className={`flex-1 py-1 rounded-sm text-[9px] font-bold border transition-all ${checked ? 'bg-[#5e7ce2] border-[#5e7ce2] text-white' : 'bg-white border-[#b8ada3] text-[#8b7d73]'}`}
-                        >
-                          {day}
-                        </button>
+                        <button key={i} onClick={() => toggle(habit.id, weekDates[i])} className={`flex-1 py-1 rounded-sm text-[9px] font-bold border transition-all ${checked ? 'bg-[#5e7ce2] border-[#5e7ce2] text-white' : 'bg-white border-[#b8ada3] text-[#8b7d73]'}`}>{day}</button>
                       )
                     })}
                   </div>
@@ -135,19 +158,14 @@
           </div>
 
           {showAdd && (
-            <div className="mt-1.5 flex gap-1 px-0.5 animate-in fade-in duration-200">
-              <input 
-                autoFocus type="text" placeholder="Habit..." 
-                className="flex-1 text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none" 
-                value={newHabit} onChange={(e) => setNewHabit(e.target.value)}
-                onKeyDown={(e) => {
-                  if(e.key === 'Enter' && newHabit) {
-                    setHabits([...habits, {id: Date.now(), name: newHabit, emoji: '✨', goal: 7}]);
-                    setNewHabit('');
-                    setShowAdd(false);
-                  }
-                }}
-              />
+            <div className="mt-1.5 flex gap-1 px-0.5">
+              <input autoFocus type="text" placeholder="New habit..." className="flex-1 text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none" value={newHabit} onChange={(e) => setNewHabit(e.target.value)} onKeyDown={(e) => {
+                if(e.key === 'Enter' && newHabit) {
+                  setHabits([...habits, {id: Date.now(), name: newHabit, emoji: '✨', goal: 7}]);
+                  setNewHabit('');
+                  setShowAdd(false);
+                }
+              }} />
             </div>
           )}
         </div>
