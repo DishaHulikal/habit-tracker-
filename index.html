@@ -24,7 +24,6 @@
       const [editingId, setEditingId] = useState(null);
       const listRef = useRef(null);
 
-      // 100% Reliable Local Date String
       const toDateKey = (date) => {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -75,18 +74,13 @@
         let count = 0;
         let d = new Date();
         const todayKey = toDateKey(d);
-        
-        // If today is NOT checked, we start checking from yesterday
         if (!completions[`${habitId}-${todayKey}`]) {
           d.setDate(d.getDate() - 1);
         }
-
-        // Walk backwards until we hit a gap
         while (completions[`${habitId}-${toDateKey(d)}`]) {
           count++;
           d.setDate(d.getDate() - 1);
-          // Safety break
-          if (count > 1000) break;
+          if (count > 365) break;
         }
         return count;
       };
@@ -115,7 +109,6 @@
           <div ref={listRef} className="space-y-1">
             {habits.map(habit => {
               const streak = getStreak(habit.id);
-              const weekly = weekDates.filter(d => completions[`${habit.id}-${toDateKey(d)}`]).length;
               const isEditing = editingId === habit.id;
 
               return (
@@ -124,17 +117,20 @@
                     <div className="flex items-center gap-1 font-bold flex-1 truncate pr-2">
                       <button onClick={() => confirm('Delete?') && setHabits(habits.filter(h => h.id !== habit.id))} className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5">✕</button>
                       {isEditing ? (
-                        <input className="flex-1 bg-white rounded px-1 outline-none" value={habit.name} onChange={(e) => setHabits(habits.map(h => h.id === habit.id ? {...h, name: e.target.value} : h))} onBlur={() => setEditingId(null)} onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)} autoFocus />
+                        <input className="flex-1 bg-white rounded px-1 outline-none font-bold text-[#4a4a4a]" 
+                          value={habit.name} 
+                          onChange={(e) => setHabits(habits.map(h => h.id === habit.id ? {...h, name: e.target.value} : h))} 
+                          onBlur={() => setEditingId(null)} 
+                          onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)} 
+                          autoFocus />
                       ) : (
-                        <span className="truncate cursor-pointer text-[#4a4a4a]" onClick={() => setEditingId(habit.id)}>{habit.emoji} {habit.name}</span>
+                        <span className="truncate cursor-pointer text-[#4a4a4a]" onClick={() => setEditingId(habit.id)}>
+                          {habit.emoji} {habit.name}
+                        </span>
                       )}
                     </div>
-                    <div className="flex gap-2 whitespace-nowrap font-bold text-[#7d8ba8]">
-                      <span className="cursor-pointer" onClick={() => {
-                        const val = prompt('Goal?', habit.goal);
-                        if(val) setHabits(habits.map(h => h.id === habit.id ? {...h, goal: parseInt(val)} : h));
-                      }}>{weekly}/{habit.goal || 7}</span>
-                      <span className="text-orange-600">{streak}🔥</span>
+                    <div className="font-bold text-orange-600 flex items-center gap-0.5">
+                      {streak}🔥
                     </div>
                   </div>
                   <div className="flex gap-0.5">
