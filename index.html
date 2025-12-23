@@ -25,18 +25,24 @@
       const [newHabit, setNewHabit] = useState('');
       const [showAdd, setShowAdd] = useState(false);
 
+      // FIXED: Strict Local Date String (YYYY-MM-DD)
+      const getLocalDateString = (date) => {
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+        return localDate.toISOString().split('T')[0];
+      };
+
       const weekDates = (() => {
-        const today = new Date();
-        const monday = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+        const now = new Date();
+        const day = now.getDay(); 
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(now.setDate(diff));
         return Array.from({length: 7}, (_, i) => {
           const d = new Date(monday);
           d.setDate(monday.getDate() + i);
           return d;
         });
       })();
-
-      const formatDate = (date) => date.toISOString().split('T')[0];
-      const isChecked = (id, d) => completions[`${id}-${formatDate(d)}`] || false;
 
       useEffect(() => {
         const stored = localStorage.getItem('habitData');
@@ -52,12 +58,12 @@
       }, [completions, habits]);
 
       const toggle = (id, d) => {
-        const key = `${id}-${formatDate(d)}`;
+        const key = `${id}-${getLocalDateString(d)}`;
         const newComps = { ...completions };
         const turningOn = !newComps[key];
         turningOn ? newComps[key] = true : delete newComps[key];
         setCompletions(newComps);
-        if (turningOn && habits.every(h => h.id === id ? true : newComps[`${h.id}-${formatDate(d)}`])) {
+        if (turningOn && habits.every(h => h.id === id ? true : newComps[`${h.id}-${getLocalDateString(d)}`])) {
           confetti({ particleCount: 80, spread: 50, origin: { y: 0.9 } });
         }
       };
@@ -70,11 +76,14 @@
 
       const getStreak = (id) => {
         let streak = 0;
-        const today = new Date();
-        for (let i = 0; i < 365; i++) {
-          const d = new Date(today);
-          d.setDate(today.getDate() - i);
-          if (isChecked(id, d)) streak++; else break;
+        const checkDate = new Date();
+        while (true) {
+          if (completions[`${id}-${getLocalDateString(checkDate)}`]) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
         }
         return streak;
       };
@@ -90,17 +99,13 @@
           
           <div className="space-y-1">
             {habits.map(habit => {
-              const weekly = weekDates.filter(d => isChecked(habit.id, d)).length;
+              const weekly = weekDates.filter(d => completions[`${habit.id}-${getLocalDateString(d)}`]).length;
               const streak = getStreak(habit.id);
               return (
                 <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
                   <div className="flex justify-between items-center mb-1 text-[10px]">
                     <div className="flex items-center gap-1 font-bold truncate pr-1">
-                      {/* NEW DELETE BUTTON */}
-                      <button 
-                        onClick={() => deleteHabit(habit.id)}
-                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-1 transition-colors"
-                      >✕</button>
+                      <button onClick={() => deleteHabit(habit.id)} className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5">✕</button>
                       <span>{habit.emoji}</span>
                       <span className="truncate text-[#4a4a4a]">{habit.name}</span>
                     </div>
@@ -109,17 +114,20 @@
                       <span className="text-orange-600">{streak}🔥</span>
                     </div>
                   </div>
-                  
                   <div className="flex gap-0.5">
-                    {['M','T','W','T','F','S','S'].map((day, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => toggle(habit.id, weekDates[i])}
-                        className={`flex-1 py-1 rounded-sm text-[9px] font-bold border transition-all ${isChecked(habit.id, weekDates[i]) ? 'bg-[#5e7ce2] border-[#5e7ce2] text-white' : 'bg-white border-[#b8ada3] text-[#8b7d73]'}`}
-                      >
-                        {day}
-                      </button>
-                    ))}
+                    {['M','T','W','T','F','S','S'].map((day, i) => {
+                      const dateStr = getLocalDateString(weekDates[i]);
+                      const checked = completions[`${habit.id}-${dateStr}`];
+                      return (
+                        <button 
+                          key={i}
+                          onClick={() => toggle(habit.id, weekDates[i])}
+                          className={`flex-1 py-1 rounded-sm text-[9px] font-bold border transition-all ${checked ? 'bg-[#5e7ce2] border-[#5e7ce2] text-white' : 'bg-white border-[#b8ada3] text-[#8b7d73]'}`}
+                        >
+                          {day}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               );
@@ -129,8 +137,7 @@
           {showAdd && (
             <div className="mt-1.5 flex gap-1 px-0.5 animate-in fade-in duration-200">
               <input 
-                autoFocus
-                type="text" placeholder="Habit..." 
+                autoFocus type="text" placeholder="Habit..." 
                 className="flex-1 text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none" 
                 value={newHabit} onChange={(e) => setNewHabit(e.target.value)}
                 onKeyDown={(e) => {
