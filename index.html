@@ -43,7 +43,6 @@
         });
       })();
 
-      // LOAD DATA FROM BROWSER
       useEffect(() => {
         const stored = localStorage.getItem('habitData');
         if (stored) {
@@ -53,7 +52,6 @@
         }
       }, []);
 
-      // SAVE DATA TO BROWSER
       useEffect(() => {
         localStorage.setItem('habitData', JSON.stringify({ completions, habits }));
       }, [completions, habits]);
@@ -127,21 +125,15 @@
       };
 
       return (
-        <div className="w-full p-2 antialiased select-none font-sans">
+        <div className="w-full p-2 antialiased select-none font-sans flex flex-col h-screen">
           <div className="flex justify-between items-center mb-1.5 px-1">
             <span className="text-base text-[#7d8ba8]">𝓗𝓪𝓫𝓲𝓽 𝓣𝓻𝓪𝓬𝓴𝓮𝓻 ⋆˚࿔</span>
-            <div className="flex gap-2 items-center">
-              <button onClick={downloadBackup} title="Backup to Desktop" className="text-[#7d8ba8] hover:text-blue-500 transition-colors text-xs">💾</button>
-              <label className="cursor-pointer text-[#7d8ba8] hover:text-green-600 transition-colors text-xs" title="Restore from File">
-                📥 <input type="file" className="hidden" onChange={handleRestore} />
-              </label>
-              <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
-                <span className="text-sm">{showAdd ? '✕' : '＋'}</span>
-              </button>
-            </div>
+            <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
+              <span className="text-sm">{showAdd ? '✕' : '＋'}</span>
+            </button>
           </div>
           
-          <div ref={listRef} className="space-y-1">
+          <div ref={listRef} className="space-y-1 overflow-y-auto flex-grow pr-1">
             {habits.map(habit => {
               const streak = getStreak(habit.id);
               const isEditing = editingId === habit.id;
@@ -194,10 +186,20 @@
               }
             }} />
           )}
+
+          <div className="mt-auto pt-2 pb-1 flex justify-end gap-3 px-1 border-t border-[#b8ada3]/30 bg-[#c9bdb4]">
+            <button onClick={downloadBackup} className="text-[#7d8ba8] hover:text-blue-500 text-[10px] flex items-center gap-1">
+              Backup 💾
+            </button>
+            <label className="cursor-pointer text-[#7d8ba8] hover:text-green-600 text-[10px] flex items-center gap-1">
+              Restore 📥 <input type="file" className="hidden" onChange={handleRestore} />
+            </label>
+          </div>
         </div>
       );
     }
-    ReactDOM.render(<HabitTracker />, document.getElementById('root'));
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<HabitTracker />);
   </script>
 </body>
 </html>
