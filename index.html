@@ -73,9 +73,7 @@
         let count = 0;
         let d = new Date();
         const todayKey = toDateKey(d);
-        if (!completions[`${habitId}-${todayKey}`]) {
-          d.setDate(d.getDate() - 1);
-        }
+        if (!completions[`${habitId}-${todayKey}`]) d.setDate(d.getDate() - 1);
         while (completions[`${habitId}-${toDateKey(d)}`]) {
           count++;
           d.setDate(d.getDate() - 1);
@@ -96,39 +94,6 @@
         setCompletions(newComps);
       };
 
-      const downloadBackup = () => {
-        const data = JSON.stringify({ completions, habits });
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `habit_backup_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-      };
-
-      const handleRestore = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const saved = JSON.parse(event.target.result);
-            setHabits(saved.habits || []);
-            setCompletions(saved.completions || {});
-            alert("Streak Restored! 🔥");
-          } catch (err) {
-            alert("Error reading file.");
-          }
-        };
-        reader.readAsText(file);
-      };
-
-      const deleteHabit = (id) => {
-        if(confirm('Delete?')) {
-          setHabits(habits.filter(h => h.id !== id));
-        }
-      };
-
       return (
         <div className="w-full p-2 antialiased select-none font-sans flex flex-col h-screen">
           <div className="flex justify-center items-center mb-1.5 px-1">
@@ -138,19 +103,23 @@
           <div ref={listRef} className="space-y-1 overflow-y-auto flex-grow pr-1">
             {habits.map(habit => {
               const streak = getStreak(habit.id);
-              const isEditing = editingId === habit.id;
-
               return (
                 <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
                   <div className="flex justify-between items-center mb-1 text-[10px]">
                     <div className="flex items-center gap-1 font-bold flex-1 truncate pr-2">
                       <button 
-                        onClick={() => deleteHabit(habit.id)} 
-                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-1 flex-shrink-0"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          console.log("Delete button pressed");
+                          if(window.confirm('Delete?')) {
+                            setHabits(prev => prev.filter(h => h.id !== habit.id));
+                          }
+                        }} 
+                        className="text-[10px] text-[#b8ada3] hover:text-red-500 px-1 border border-transparent active:scale-110"
                       >
                         ✕
                       </button>
-                      {isEditing ? (
+                      {editingId === habit.id ? (
                         <input className="flex-1 bg-white rounded px-1 outline-none font-bold text-[#4a4a4a]" 
                           value={habit.name} 
                           onChange={(e) => setHabits(habits.map(h => h.id === habit.id ? {...h, name: e.target.value} : h))} 
@@ -163,9 +132,7 @@
                         </span>
                       )}
                     </div>
-                    <div className="font-bold text-orange-600 flex items-center gap-0.5">
-                      {streak}🔥
-                    </div>
+                    <div className="font-bold text-orange-600 flex items-center gap-0.5">{streak}🔥</div>
                   </div>
                   <div className="flex gap-0.5">
                     {['M','T','W','T','F','S','S'].map((day, i) => {
@@ -198,14 +165,6 @@
             <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors text-sm font-bold">
               {showAdd ? '✕' : '＋'}
             </button>
-            <div className="flex gap-4">
-              <button onClick={downloadBackup} className="text-[#7d8ba8] hover:text-blue-500 transition-colors text-sm">
-                💾
-              </button>
-              <label className="cursor-pointer text-[#7d8ba8] hover:text-green-600 transition-colors text-sm">
-                📥 <input type="file" className="hidden" onChange={handleRestore} />
-              </label>
-            </div>
           </div>
         </div>
       );
