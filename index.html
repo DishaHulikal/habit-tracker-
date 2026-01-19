@@ -123,6 +123,12 @@
         reader.readAsText(file);
       };
 
+      const deleteHabit = (id) => {
+        if(confirm('Delete?')) {
+          setHabits(habits.filter(h => h.id !== id));
+        }
+      };
+
       return (
         <div className="w-full p-2 antialiased select-none font-sans flex flex-col h-screen">
           <div className="flex justify-center items-center mb-1.5 px-1">
@@ -139,11 +145,8 @@
                   <div className="flex justify-between items-center mb-1 text-[10px]">
                     <div className="flex items-center gap-1 font-bold flex-1 truncate pr-2">
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if(confirm('Delete?')) setHabits(habits.filter(h => h.id !== habit.id));
-                        }} 
-                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5"
+                        onClick={() => deleteHabit(habit.id)} 
+                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-1 flex-shrink-0"
                       >
                         ✕
                       </button>
@@ -155,7 +158,7 @@
                           onKeyDown={(e) => e.key === 'Enter' && setEditingId(null)} 
                           autoFocus />
                       ) : (
-                        <span className="truncate cursor-pointer text-[#4a4a4a]" onClick={() => setEditingId(habit.id)}>
+                        <span className="truncate cursor-pointer text-[#4a4a4a] flex-1" onClick={() => setEditingId(habit.id)}>
                           {habit.name}
                         </span>
                       )}
