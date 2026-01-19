@@ -43,6 +43,7 @@
         });
       })();
 
+      // LOAD DATA FROM BROWSER
       useEffect(() => {
         const stored = localStorage.getItem('habitData');
         if (stored) {
@@ -52,6 +53,7 @@
         }
       }, []);
 
+      // SAVE DATA TO BROWSER
       useEffect(() => {
         localStorage.setItem('habitData', JSON.stringify({ completions, habits }));
       }, [completions, habits]);
@@ -97,13 +99,46 @@
         setCompletions(newComps);
       };
 
+      const downloadBackup = () => {
+        const data = JSON.stringify({ completions, habits });
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `habit_backup_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+      };
+
+      const handleRestore = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const saved = JSON.parse(event.target.result);
+            setHabits(saved.habits || []);
+            setCompletions(saved.completions || {});
+            alert("Streak Restored! 🔥");
+          } catch (err) {
+            alert("Error reading file.");
+          }
+        };
+        reader.readAsText(file);
+      };
+
       return (
         <div className="w-full p-2 antialiased select-none font-sans">
           <div className="flex justify-between items-center mb-1.5 px-1">
             <span className="text-base text-[#7d8ba8]">𝓗𝓪𝓫𝓲𝓽 𝓣𝓻𝓪𝓬𝓴𝓮𝓻 ⋆˚࿔</span>
-            <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
-              <span className="text-sm">{showAdd ? '✕' : '＋'}</span>
-            </button>
+            <div className="flex gap-2 items-center">
+              <button onClick={downloadBackup} title="Backup to Desktop" className="text-[#7d8ba8] hover:text-blue-500 transition-colors text-xs">💾</button>
+              <label className="cursor-pointer text-[#7d8ba8] hover:text-green-600 transition-colors text-xs" title="Restore from File">
+                📥 <input type="file" className="hidden" onChange={handleRestore} />
+              </label>
+              <button onClick={() => setShowAdd(!showAdd)} className="text-[#7d8ba8] hover:text-white transition-colors">
+                <span className="text-sm">{showAdd ? '✕' : '＋'}</span>
+              </button>
+            </div>
           </div>
           
           <div ref={listRef} className="space-y-1">
