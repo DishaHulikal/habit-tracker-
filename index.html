@@ -138,7 +138,15 @@
                 <div key={habit.id} className="bg-[#e8e2dd]/90 p-1.5 rounded-md shadow-sm border border-transparent">
                   <div className="flex justify-between items-center mb-1 text-[10px]">
                     <div className="flex items-center gap-1 font-bold flex-1 truncate pr-2">
-                      <button onClick={() => confirm('Delete?') && setHabits(habits.filter(h => h.id !== habit.id))} className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5">✕</button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if(confirm('Delete?')) setHabits(habits.filter(h => h.id !== habit.id));
+                        }} 
+                        className="text-[8px] text-[#b8ada3] hover:text-red-400 pr-0.5"
+                      >
+                        ✕
+                      </button>
                       {isEditing ? (
                         <input className="flex-1 bg-white rounded px-1 outline-none font-bold text-[#4a4a4a]" 
                           value={habit.name} 
@@ -174,7 +182,7 @@
           </div>
 
           {showAdd && (
-            <input autoFocus type="text" placeholder="Add habit (use emojis!)..." className="mt-1.5 w-full text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none shadow-inner" onKeyDown={(e) => {
+            <input autoFocus type="text" placeholder="Add habit..." className="mt-1.5 w-full text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none shadow-inner" onKeyDown={(e) => {
               if(e.key === 'Enter' && e.target.value) {
                 setHabits([...habits, {id: Date.now(), name: e.target.value}]);
                 e.target.value = '';
