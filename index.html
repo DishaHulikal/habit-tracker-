@@ -148,7 +148,7 @@
                           autoFocus />
                       ) : (
                         <span className="truncate cursor-pointer text-[#4a4a4a]" onClick={() => setEditingId(habit.id)}>
-                          {habit.emoji || '✨'} {habit.name}
+                          {habit.name}
                         </span>
                       )}
                     </div>
@@ -174,9 +174,9 @@
           </div>
 
           {showAdd && (
-            <input autoFocus type="text" placeholder="Add habit..." className="mt-1.5 w-full text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none shadow-inner" onKeyDown={(e) => {
+            <input autoFocus type="text" placeholder="Add habit (use emojis!)..." className="mt-1.5 w-full text-[10px] p-1 rounded border border-[#b8ada3] bg-white outline-none shadow-inner" onKeyDown={(e) => {
               if(e.key === 'Enter' && e.target.value) {
-                setHabits([...habits, {id: Date.now(), name: e.target.value, emoji: '✨'}]);
+                setHabits([...habits, {id: Date.now(), name: e.target.value}]);
                 e.target.value = '';
                 setShowAdd(false);
               }
